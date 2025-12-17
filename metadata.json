@@ -1,0 +1,5 @@
+{
+  "name": "DressMe",
+  "description": "Crie looks de moda combinando fotos de modelos e peças de roupa usando Gemini 3 Pro e Veo.",
+  "requestFramePermissions": []
+}
