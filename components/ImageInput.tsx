@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { ImageFile } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ImageInputProps {
   label: string;
@@ -10,27 +11,101 @@ interface ImageInputProps {
 }
 
 const ImageInput: React.FC<ImageInputProps> = ({ label, image, onImageSelected, onRemove, required }) => {
+  const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Função auxiliar para converter imagens para PNG
+  const convertImageToPNG = (file: File): Promise<{ preview: string; base64: string }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        const img = new Image();
+        
+        img.onload = () => {
+          // Criar canvas para conversão
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Não foi possível criar contexto do canvas'));
+            return;
+          }
+          
+          // Desenhar imagem no canvas
+          ctx.drawImage(img, 0, 0);
+          
+          // Converter para PNG
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              reject(new Error('Falha ao converter imagem'));
+              return;
+            }
+            
+            const pngReader = new FileReader();
+            pngReader.onload = (event) => {
+              const result = event.target?.result as string;
+              const base64 = result.split(',')[1];
+              
+              resolve({
+                preview: result,
+                base64: base64
+              });
+            };
+            pngReader.onerror = reject;
+            pngReader.readAsDataURL(blob);
+          }, 'image/png', 0.95); // PNG com qualidade 95%
+        };
+        
+        img.onerror = () => reject(new Error('Falha ao carregar imagem'));
+        img.src = e.target?.result as string;
+      };
+      
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      // Extract pure Base64 and MimeType
-      const base64 = result.split(',')[1];
-      const mimeType = result.split(';')[0].split(':')[1];
+    // Lista de formatos que precisam ser convertidos
+    const needsConversion = ['image/avif', 'image/webp', 'image/jxl', 'image/heic', 'image/heif'];
+    
+    if (needsConversion.includes(file.type)) {
+      // Converter para PNG
+      try {
+        const convertedData = await convertImageToPNG(file);
+        onImageSelected({
+          file,
+          preview: convertedData.preview,
+          base64: convertedData.base64,
+          mimeType: 'image/png' // Sempre PNG após conversão
+        });
+      } catch (error) {
+        console.error('Erro ao converter imagem:', error);
+        alert(t.imageConversionError);
+      }
+    } else {
+      // Formatos já suportados (JPEG, PNG)
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        const base64 = result.split(',')[1];
+        const mimeType = result.split(';')[0].split(':')[1];
 
-      onImageSelected({
-        file,
-        preview: result,
-        base64,
-        mimeType
-      });
-    };
-    reader.readAsDataURL(file);
+        onImageSelected({
+          file,
+          preview: result,
+          base64,
+          mimeType
+        });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -74,14 +149,14 @@ const ImageInput: React.FC<ImageInputProps> = ({ label, image, onImageSelected, 
             <svg className="w-8 h-8 text-gray-400 dark:text-neutral-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
             </svg>
-            <span className="text-xs text-gray-500 dark:text-neutral-400">Clique para adicionar</span>
+            <span className="text-xs text-gray-500 dark:text-neutral-400">{t.clickToAdd}</span>
           </div>
         )}
         
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/jpg,image/webp,image/avif,image/jxl,image/heic,image/heif"
           className="hidden"
           onChange={handleFileChange}
         />

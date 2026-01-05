@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import ImageInput from './components/ImageInput';
+import LanguageSelector from './components/LanguageSelector';
 import { ImageFile } from './types';
 import { generateFashionLook, editBackground, generateFashionVideo, checkApiKeySelection, promptApiKeySelection, getStoredApiKey, removeStoredApiKey, validateApiKey, setStoredApiKey } from './services/geminiService';
+import { useLanguage } from './contexts/LanguageContext';
 
 declare global {
   // Augment the existing AIStudio interface to include the required methods.
@@ -13,6 +15,8 @@ declare global {
 }
 
 const App: React.FC = () => {
+  const { t } = useLanguage();
+  
   // Theme State
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   
@@ -61,7 +65,7 @@ const App: React.FC = () => {
 
   const handleKeyValidation = async () => {
     if (!tempKey.trim()) {
-      setKeyError("Por favor, insira uma chave.");
+      setKeyError(t.enterKey);
       return;
     }
 
@@ -75,7 +79,7 @@ const App: React.FC = () => {
       setHasApiKey(true);
       setTempKey(""); // Clear input
     } else {
-      setKeyError("Chave inválida ou inativa. Verifique e tente novamente.");
+      setKeyError(t.invalidKey);
     }
     setIsKeyValidating(false);
   };
@@ -94,7 +98,7 @@ const App: React.FC = () => {
     if (!modelImage) return;
     
     setLoading(true);
-    setLoadingStep("Criando seu look com Gemini 3 Pro...");
+    setLoadingStep(t.creatingLook);
     setError(null);
     setGeneratedVideoUrl(null); // Reset video if regenerating look
 
@@ -106,9 +110,9 @@ const App: React.FC = () => {
     } catch (err: any) {
       console.error(err);
       if (err.message && err.message.includes("403")) {
-          setError("Chave de API inválida ou sem permissão. Tente sair e colocar outra chave.");
+          setError(t.invalidKeyError);
       } else {
-          setError(err.message || "Ocorreu um erro ao gerar o look.");
+          setError(err.message || t.generateError);
       }
     } finally {
       setLoading(false);
@@ -120,7 +124,7 @@ const App: React.FC = () => {
     if (!generatedImageUrl || !prompt.trim()) return;
 
     setLoading(true);
-    setLoadingStep("Atualizando o ambiente...");
+    setLoadingStep(t.updatingEnvironment);
     setError(null);
 
     try {
@@ -130,7 +134,7 @@ const App: React.FC = () => {
         setGeneratedVideoUrl(null); // Reset video if image changes
         setPrompt(""); // Clear prompt
     } catch (err: any) {
-        setError(err.message || "Erro ao editar fundo.");
+        setError(err.message || t.editBackgroundError);
     } finally {
         setLoading(false);
         setLoadingStep("");
@@ -141,7 +145,7 @@ const App: React.FC = () => {
     if (!generatedImageUrl) return;
 
     setLoading(true);
-    setLoadingStep("Gerando vídeo com Veo (isso pode levar alguns minutos)...");
+    setLoadingStep(t.generatingVideo);
     setError(null);
 
     try {
@@ -153,7 +157,7 @@ const App: React.FC = () => {
 
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Erro ao gerar vídeo. Verifique se sua chave tem acesso ao Veo e faturamento ativado.");
+      setError(err.message || t.videoError);
     } finally {
       setLoading(false);
       setLoadingStep("");
@@ -171,7 +175,7 @@ const App: React.FC = () => {
             className="mb-1"
           />
           <p className="text-gray-600 dark:text-neutral-400 text-sm">
-            Misture peças, crie looks e dê vida a eles.
+            {t.headerSubtitle}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -180,13 +184,14 @@ const App: React.FC = () => {
               onClick={handleLogout}
               className="text-xs text-red-500 hover:text-red-700 underline mr-2"
             >
-              Trocar Chave
+              {t.changeKey}
             </button>
           )}
+          <LanguageSelector />
           <button 
             onClick={toggleTheme}
             className="p-2 rounded-full border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors text-gray-600 dark:text-neutral-400"
-            title={theme === 'light' ? 'Mudar para modo escuro' : 'Mudar para modo claro'}
+            title={theme === 'light' ? t.themeDark : t.themeLight}
           >
             {theme === 'light' ? (
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
@@ -195,7 +200,7 @@ const App: React.FC = () => {
             )}
           </button>
           <div className="text-xs text-gray-500 dark:text-neutral-500 border border-gray-300 dark:border-neutral-700 rounded-full px-3 py-1">
-            Powered by TGOO
+            {t.poweredBy}
           </div>
         </div>
       </header>
@@ -209,17 +214,17 @@ const App: React.FC = () => {
             // --- API KEY LOGIN STATE ---
             <div className="bg-white dark:bg-neutral-800/40 p-6 rounded-2xl border border-gray-200 dark:border-neutral-800 shadow-sm dark:shadow-none backdrop-blur-sm transition-colors duration-300">
                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Acesso ao Sistema</h2>
-                  <span className="bg-gray-100 dark:bg-neutral-700 text-gray-500 dark:text-neutral-400 text-xs font-bold px-3 py-1 rounded-full">Requerido</span>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t.systemAccess}</h2>
+                  <span className="bg-gray-100 dark:bg-neutral-700 text-gray-500 dark:text-neutral-400 text-xs font-bold px-3 py-1 rounded-full">{t.required}</span>
                </div>
                
                <p className="text-gray-600 dark:text-neutral-400 text-sm mb-6">
-                  Insira a sua chave API do Google Gemini para ativar o DressMe.
+                  {t.apiKeyDescription}
                </p>
 
                <div className="mb-6">
                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                   Sua Chave API:
+                   {t.yourApiKey}
                  </label>
                  <input
                    type="password"
@@ -252,7 +257,7 @@ const App: React.FC = () => {
                      : 'bg-green-600 hover:bg-green-700 hover:-translate-y-0.5 shadow-lg shadow-green-900/20'}
                  `}
                >
-                 {isKeyValidating ? 'Validando...' : 'Validar e Entrar'}
+                 {isKeyValidating ? t.validating : t.validateAndEnter}
                </button>
 
                <div className="mt-6 text-center">
@@ -262,18 +267,18 @@ const App: React.FC = () => {
                    rel="noreferrer"
                    className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
                  >
-                   Obter chave API no Google AI Studio
+                   {t.getApiKey}
                  </a>
                </div>
             </div>
           ) : (
             // --- IMAGE INPUTS STATE ---
             <div className="bg-white dark:bg-neutral-800/40 p-6 rounded-2xl border border-gray-200 dark:border-neutral-800 shadow-sm dark:shadow-none backdrop-blur-sm transition-colors duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">1. Selecione as Fotos</h2>
+              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">{t.selectPhotos}</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <ImageInput 
-                    label="Foto da Modelo" 
+                    label={t.modelPhoto}
                     image={modelImage} 
                     onImageSelected={setModelImage} 
                     onRemove={() => setModelImage(null)}
@@ -281,13 +286,13 @@ const App: React.FC = () => {
                   />
                 </div>
                 <ImageInput 
-                  label="Peça de Cima" 
+                  label={t.topPiece}
                   image={topImage} 
                   onImageSelected={setTopImage} 
                   onRemove={() => setTopImage(null)}
                 />
                 <ImageInput 
-                  label="Peça de Baixo" 
+                  label={t.bottomPiece}
                   image={bottomImage} 
                   onImageSelected={setBottomImage} 
                   onRemove={() => setBottomImage(null)}
@@ -305,11 +310,11 @@ const App: React.FC = () => {
                       : 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white shadow-pink-900/20 hover:shadow-pink-900/40 transform hover:-translate-y-0.5'}
                   `}
                 >
-                  {loading ? 'Processando...' : 'GERAR LOOK ✨'}
+                  {loading ? t.processing : t.generateLook}
                 </button>
                 {!canGenerate && (
                   <p className="text-xs text-center mt-2 text-gray-400 dark:text-neutral-500">
-                    *Modelo e pelo menos uma peça de roupa são obrigatórios.
+                    {t.requiredNote}
                   </p>
                 )}
               </div>
@@ -318,12 +323,12 @@ const App: React.FC = () => {
 
           {/* Instructions / Info */}
           <div className="bg-gray-100 dark:bg-neutral-800/20 p-6 rounded-2xl border border-gray-200 dark:border-neutral-800 text-sm text-gray-600 dark:text-neutral-400 transition-colors duration-300">
-            <h3 className="text-gray-900 dark:text-white font-medium mb-2">Como funciona:</h3>
+            <h3 className="text-gray-900 dark:text-white font-medium mb-2">{t.howItWorks}</h3>
             <ul className="list-disc list-inside space-y-1 ml-1">
-              <li>Envie uma foto de corpo inteiro da modelo.</li>
-              <li>Envie fotos claras das roupas (fundo liso ajuda).</li>
-              <li>A IA combinará as peças na modelo.</li>
-              <li>Depois, você pode alterar o cenário ou criar um vídeo.</li>
+              <li>{t.instruction1}</li>
+              <li>{t.instruction2}</li>
+              <li>{t.instruction3}</li>
+              <li>{t.instruction4}</li>
             </ul>
           </div>
         </div>
@@ -353,9 +358,9 @@ const App: React.FC = () => {
                  <div className="w-24 h-32 border-4 border-dashed border-gray-300 dark:border-neutral-500 rounded-lg mx-auto mb-4 flex items-center justify-center">
                    <span className="text-4xl">✨</span>
                  </div>
-                 <p className="text-xl font-medium text-gray-800 dark:text-neutral-200">Seu look aparecerá aqui</p>
-                 <p className="text-gray-500 dark:text-neutral-400">Formato 9:16 pronto para stories</p>
-                 {!hasApiKey && <p className="text-xs text-red-500 mt-4 font-bold">Faça login com a API para começar</p>}
+                 <p className="text-xl font-medium text-gray-800 dark:text-neutral-200">{t.yourLookHere}</p>
+                 <p className="text-gray-500 dark:text-neutral-400">{t.storiesFormat}</p>
+                 {!hasApiKey && <p className="text-xs text-red-500 mt-4 font-bold">{t.loginToStart}</p>}
                </div>
              ) : (
                <div className="w-full flex flex-col md:flex-row gap-6 items-start justify-center">
@@ -367,14 +372,14 @@ const App: React.FC = () => {
                       alt="Generated Look" 
                       className="w-full h-auto rounded-lg shadow-2xl shadow-black/20 dark:shadow-black/50 border border-gray-200 dark:border-neutral-700"
                     />
-                    <a 
-                      href={generatedImageUrl} 
-                      download="look-ai.png"
-                      className="absolute bottom-4 right-4 bg-white/10 hover:bg-white/20 backdrop-blur-md p-2 rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Baixar Imagem"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                    </a>
+                   <a 
+                     href={generatedImageUrl} 
+                     download="look-ai.png"
+                     className="absolute bottom-4 right-4 bg-white/10 hover:bg-white/20 backdrop-blur-md p-2 rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                     title={t.downloadImage}
+                   >
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                   </a>
                  </div>
 
                  {/* Actions Panel */}
@@ -383,14 +388,14 @@ const App: React.FC = () => {
                    {/* Prompt Editor */}
                    <div className="bg-gray-50 dark:bg-neutral-900/50 p-4 rounded-xl border border-gray-200 dark:border-neutral-700 transition-colors duration-300">
                      <label className="block text-sm font-medium text-pink-600 dark:text-pink-300 mb-2">
-                       2. Alterar Ambiente / Fundo
+                       {t.changeBackground}
                      </label>
                      <div className="flex gap-2">
                        <input
                          type="text"
                          value={prompt}
                          onChange={(e) => setPrompt(e.target.value)}
-                         placeholder="Ex: na praia ao pôr do sol..."
+                         placeholder={t.backgroundPlaceholder}
                          className="flex-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-pink-500 transition-colors placeholder-gray-400 dark:placeholder-neutral-500"
                          onKeyDown={(e) => e.key === 'Enter' && handleEditBackground()}
                        />
@@ -399,7 +404,7 @@ const App: React.FC = () => {
                          disabled={!prompt.trim() || loading}
                          className="bg-gray-200 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-gray-900 dark:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                        >
-                         Aplicar
+                         {t.apply}
                        </button>
                      </div>
                    </div>
@@ -408,9 +413,9 @@ const App: React.FC = () => {
                    <div className="bg-gray-50 dark:bg-neutral-900/50 p-4 rounded-xl border border-gray-200 dark:border-neutral-700 transition-colors duration-300">
                       <div className="flex items-center justify-between mb-2">
                         <label className="block text-sm font-medium text-purple-600 dark:text-purple-300">
-                          3. Gerar Vídeo (Veo)
+                          {t.generateVideo}
                         </label>
-                        <span className="text-[10px] bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-200 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-500/30">Pago</span>
+                        <span className="text-[10px] bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-200 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-500/30">{t.paid}</span>
                       </div>
                       
                       {generatedVideoUrl ? (
@@ -426,7 +431,7 @@ const App: React.FC = () => {
                               href={generatedVideoUrl} 
                               download="look-ai-video.mp4"
                               className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 backdrop-blur-md p-2 rounded-lg text-white opacity-0 group-hover:opacity-100 transition-all duration-200 transform hover:scale-105"
-                              title="Baixar Vídeo"
+                              title={t.downloadVideo}
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
                             </a>
@@ -439,11 +444,11 @@ const App: React.FC = () => {
                             className="w-full bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 py-3 rounded-lg text-sm font-bold shadow-lg text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect width="15" height="14" x="1" y="5" rx="2" ry="2"/></svg>
-                            GERAR VÍDEO DO LOOK
+                            {t.generateVideoButton}
                           </button>
                           <p className="text-[10px] text-gray-500 dark:text-neutral-500 mt-2">
-                            Requer seleção de chave de API paga do Google Cloud. <br/>
-                            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="underline hover:text-purple-600 dark:hover:text-purple-400">Saiba mais sobre faturamento.</a>
+                            {t.requiresPaidKey} <br/>
+                            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="underline hover:text-purple-600 dark:hover:text-purple-400">{t.learnMoreBilling}</a>
                           </p>
                         </div>
                       )}
