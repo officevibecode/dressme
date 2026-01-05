@@ -13,6 +13,7 @@ interface ImageInputProps {
 const ImageInput: React.FC<ImageInputProps> = ({ label, image, onImageSelected, onRemove, required }) => {
   const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
 
   // Função auxiliar para converter imagens para PNG
   const convertImageToPNG = (file: File): Promise<{ preview: string; base64: string }> => {
@@ -68,10 +69,7 @@ const ImageInput: React.FC<ImageInputProps> = ({ label, image, onImageSelected, 
     });
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processFile = async (file: File) => {
     // Lista de formatos que precisam ser convertidos
     const needsConversion = ['image/avif', 'image/webp', 'image/jxl', 'image/heic', 'image/heif'];
     
@@ -108,6 +106,41 @@ const ImageInput: React.FC<ImageInputProps> = ({ label, image, onImageSelected, 
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    // Verificar se é uma imagem
+    if (!file.type.startsWith('image/')) {
+      alert(t.imageConversionError);
+      return;
+    }
+
+    await processFile(file);
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -119,9 +152,14 @@ const ImageInput: React.FC<ImageInputProps> = ({ label, image, onImageSelected, 
           relative w-full aspect-[3/4] rounded-xl border-2 border-dashed transition-all duration-300
           ${image 
             ? 'border-pink-500 bg-white dark:bg-neutral-800' 
-            : 'border-gray-300 hover:border-gray-400 bg-gray-50 hover:bg-gray-100 dark:border-neutral-600 dark:hover:border-neutral-400 dark:bg-neutral-800/50 dark:hover:bg-neutral-800'}
+            : isDragging
+              ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 scale-105'
+              : 'border-gray-300 hover:border-gray-400 bg-gray-50 hover:bg-gray-100 dark:border-neutral-600 dark:hover:border-neutral-400 dark:bg-neutral-800/50 dark:hover:bg-neutral-800'}
           flex items-center justify-center overflow-hidden
         `}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
         {image ? (
           <>
@@ -146,10 +184,21 @@ const ImageInput: React.FC<ImageInputProps> = ({ label, image, onImageSelected, 
             className="flex flex-col items-center justify-center cursor-pointer w-full h-full p-4 text-center"
             onClick={() => inputRef.current?.click()}
           >
-            <svg className="w-8 h-8 text-gray-400 dark:text-neutral-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-            </svg>
-            <span className="text-xs text-gray-500 dark:text-neutral-400">{t.clickToAdd}</span>
+            {isDragging ? (
+              <>
+                <svg className="w-10 h-10 text-pink-500 dark:text-pink-400 mb-2 animate-bounce" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span className="text-sm font-medium text-pink-600 dark:text-pink-400">{t.dropImageHere}</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-8 h-8 text-gray-400 dark:text-neutral-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="text-xs text-gray-500 dark:text-neutral-400">{t.clickToAdd}</span>
+              </>
+            )}
           </div>
         )}
         

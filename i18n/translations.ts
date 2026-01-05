@@ -28,6 +28,7 @@ export interface Translations {
   processing: string;
   requiredNote: string;
   clickToAdd: string;
+  dropImageHere: string;
 
   // Instructions
   howItWorks: string;
@@ -97,6 +98,7 @@ export const translations: Record<Language, Translations> = {
     processing: 'Processando...',
     requiredNote: '*Modelo e pelo menos uma peça de roupa são obrigatórios.',
     clickToAdd: 'Clique para adicionar',
+    dropImageHere: 'Solte a imagem aqui',
 
     // Instructions
     howItWorks: 'Como funciona:',
@@ -164,6 +166,7 @@ export const translations: Record<Language, Translations> = {
     processing: 'Processing...',
     requiredNote: '*Model and at least one clothing piece are required.',
     clickToAdd: 'Click to add',
+    dropImageHere: 'Drop image here',
 
     // Instructions
     howItWorks: 'How it works:',
